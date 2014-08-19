@@ -8,6 +8,7 @@ import static de.robv.android.xposed.XposedHelpers.setObjectField;
 
 import java.lang.reflect.Field;
 
+import android.view.InputDevice;
 import android.view.KeyEvent;
 import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.XC_MethodHook;
@@ -95,6 +96,17 @@ public class KeyConsumeHook implements IXposedHookLoadPackage{
 			
 			//catch the power button that was passed along and change the KeyCode value
 			if (event.getKeyCode() == KeyEvent.KEYCODE_POWER && event.getDeviceId() == btKeyboardID) {
+				//TODO remove this when done. 
+				//I am trying to see if I can get better info on the keyboard and maybe identify exactly which kl file it uses
+				InputDevice device = event.getDevice();
+				XposedBridge.log("Device name: " + device.getName());
+				XposedBridge.log("Device descriptor: " + device.getDescriptor());
+				XposedBridge.log("Device vendor: " + device.getVendorId());
+				XposedBridge.log("Device product ID: " + device.getProductId());
+				XposedBridge.log("Device isVirtual: " + device.isVirtual());
+				XposedBridge.log("Device Type: " + device.getKeyboardType());
+				XposedBridge.log("Device Sources: " + device.getSources());
+				XposedBridge.log("Device kcm: " + device.getKeyCharacterMap());
 				param.setResult(0); //tell it it was not handled and let the app handle it. 
 			}
 			
@@ -240,3 +252,11 @@ public class KeyConsumeHook implements IXposedHookLoadPackage{
 	
 
 }
+
+/*
+ * Notes: better way to consistently identify a device: 
+ * http://grepcode.com/file/repository.grepcode.com/java/ext/com.google.android/android/4.4.4_r1/android/view/InputDevice.java#InputDevice.getDescriptor%28%29
+ * 
+ * this should work better than device ID, since that occasionally changes.
+ * 
+ */
