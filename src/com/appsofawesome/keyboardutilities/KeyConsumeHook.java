@@ -69,6 +69,11 @@ public class KeyConsumeHook implements IXposedHookLoadPackage{
 		
 		//public int interceptKeyBeforeQueueing(KeyEvent event, int policyFlags, boolean isScreenOn) {
 		findAndHookMethod(WindowManagerClass, "interceptKeyBeforeQueueing", KeyEvent.class, int.class, boolean.class, hook2);
+		
+		//findAndHookMethod(WindowManagerClass, "preloadRecentApps", hook3);
+		
+		//public KeyEvent dispatchUnhandledKey(WindowState win, KeyEvent event, int policyFlags) {
+		findAndHookMethod(WindowManagerClass, "dispatchUnhandledKey", WindowStateClass, KeyEvent.class, int.class, hook4);
 	}
 
 	//the callback that overrides behavior in certain circumstances. 
@@ -88,12 +93,12 @@ public class KeyConsumeHook implements IXposedHookLoadPackage{
 				param.setResult(0); //tell it it was not handled and let the app handle it. 
 			}
 			
-			//I need a stack trace at this point when it recieves a power button press, so I am going to check for that and throw an exception that will be logged. 
+			//catch the power button that was passed along and change the KeyCode value
 			if (event.getKeyCode() == KeyEvent.KEYCODE_POWER && event.getDeviceId() == btKeyboardID) {
 				XposedBridge.log("found power button push which was passed along");
-				Exception ex = new Exception();
-				XposedBridge.log(ex);
-				param.setThrowable(ex);
+				//TODO see if this works
+				setObjectField(event, "mKeyCode", KeyEvent.KEYCODE_APP_SWITCH);
+				param.setResult(0); //tell it it was not handled and let the app handle it. 
 			}
 			
 			//removed code trying to  stop the language switch from happening due to Shift space consumption. It worked, except that the consumption is handled at a higher level by the samsung keyboard app.
@@ -166,8 +171,8 @@ public class KeyConsumeHook implements IXposedHookLoadPackage{
 					//KeyEvent newOne = new KeyEvent(event.getDownTime(), event.getEventTime(), event.getAction(), KeyEvent.KEYCODE_FORWARD_DEL, event.getRepeatCount(), event.getMetaState(), event.getDeviceId(), event.getScanCode(), event.getFlags(), event.getSource());
 					//see if this works...
 					
-					setObjectField(event, "mKeyCode", KeyEvent.KEYCODE_FORWARD_DEL);
-					XposedBridge.log("BeforeQueue: new KeyCode is " + (event.getKeyCode() == KeyEvent.KEYCODE_FORWARD_DEL? "CORRECT":"WRONG"));
+					//setObjectField(event, "mKeyCode", KeyEvent.KEYCODE_FORWARD_DEL);
+					XposedBridge.log("caught power from BT keyboard");
 					param.setResult(1); //this stands for pass to user. should not be hard coded TODO
 				}
 				else {
@@ -179,9 +184,43 @@ public class KeyConsumeHook implements IXposedHookLoadPackage{
 		
 		@Override
 		protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-			KeyEvent event = (KeyEvent) param.args[0];
-			String s = ((event.getKeyCode() == KeyEvent.KEYCODE_FORWARD_DEL? "CORRECT":"WRONG"));
-			XposedBridge.log("finished interceptKeyBeforeQueue with result " + param.getResult() + "and keycode is " + s);
+//			KeyEvent event = (KeyEvent) param.args[0];
+//			String s = ((event.getKeyCode() == KeyEvent.KEYCODE_FORWARD_DEL? "CORRECT":"WRONG"));
+//			XposedBridge.log("finished interceptKeyBeforeQueue with result " + param.getResult() + "and keycode is " + s);
+		}
+	};
+	
+	
+//	XC_MethodHook hook3 = new XC_MethodHook() {
+//		@Override
+//		protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+//			XposedBridge.log("caught changed keystroke");
+//			param.setResult(null);
+//		}
+//		
+//		@Override
+//		protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+//
+//		}
+//	};
+	
+	//This hooks the unhandled key dispatch method. Basically, this is where it checks for fallback actions, and the returned KeyEvent is the one it dispatches. so switches should happen here, I think. 
+	XC_MethodHook hook4 = new XC_MethodHook() {
+		@Override
+		protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+			
+			KeyEvent event = (KeyEvent) param.args[1];
+			if (event.getKeyCode() == KeyEvent.KEYCODE_POWER && event.getDeviceId() == btKeyboardID) {
+				setObjectField(event, "mKeyCode", KeyEvent.KEYCODE_FORWARD_DEL);
+				param.setResult(event);
+				XposedBridge.log("changed keystroke before dispatch");
+				
+			}
+		}
+		
+		@Override
+		protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+
 		}
 	};
 	
