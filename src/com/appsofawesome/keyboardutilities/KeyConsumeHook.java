@@ -4,6 +4,7 @@ package com.appsofawesome.keyboardutilities;
 import static de.robv.android.xposed.XposedHelpers.findAndHookMethod;
 import static de.robv.android.xposed.XposedHelpers.findClass;
 import static de.robv.android.xposed.XposedHelpers.findField;
+import static de.robv.android.xposed.XposedHelpers.setObjectField;
 
 import java.lang.reflect.Field;
 
@@ -13,13 +14,15 @@ import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XC_MethodHook.MethodHookParam;
 import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam;
-
+//import android.view.WindowManagerPolicy; //for some reason, this is not publicly accessible
 
 
 public class KeyConsumeHook implements IXposedHookLoadPackage{
 	
 	private boolean catchAltTab = true;
 	private boolean catchWinTab = false;
+	
+	private int btKeyboardID = 6;
 
 
 
@@ -85,6 +88,14 @@ public class KeyConsumeHook implements IXposedHookLoadPackage{
 				param.setResult(0); //tell it it was not handled and let the app handle it. 
 			}
 			
+			//I need a stack trace at this point when it recieves a power button press, so I am going to check for that and throw an exception that will be logged. 
+			if (event.getKeyCode() == KeyEvent.KEYCODE_POWER && event.getDeviceId() == btKeyboardID) {
+				XposedBridge.log("found power button push which was passed along");
+				Exception ex = new Exception();
+				XposedBridge.log(ex);
+				param.setThrowable(ex);
+			}
+			
 			//removed code trying to  stop the language switch from happening due to Shift space consumption. It worked, except that the consumption is handled at a higher level by the samsung keyboard app.
 //			else if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0
 //	                && (event.getKeyCode() == KeyEvent.KEYCODE_LANGUAGE_SWITCH
@@ -93,7 +104,7 @@ public class KeyConsumeHook implements IXposedHookLoadPackage{
 //				
 //				/* if (event.getKeyCode() == KeyEvent.KEYCODE_SPACE && (event.isShiftPressed())) { */
 //				XposedBridge.log("Shift + Space detected.");
-//				param.setResult(0); //tell it it was not handled and let the app handle it. (just send shit+ space for the app to handle)
+//				param.setResult(0); //tell it it was not handled and let the app handle it. (just send shift+ space for the app to handle)
 //				return;
 //			}
 //			
@@ -102,7 +113,6 @@ public class KeyConsumeHook implements IXposedHookLoadPackage{
 //				//leave this alone for now
 //			}
 			
-//			param.setResult(0);
 			
 		}
 		@Override
@@ -110,6 +120,7 @@ public class KeyConsumeHook implements IXposedHookLoadPackage{
 
 		}
 	};
+	
 	
 	XC_MethodHook hook2 = new XC_MethodHook() {
 		
@@ -124,7 +135,10 @@ public class KeyConsumeHook implements IXposedHookLoadPackage{
 			
 			//code to remap sleep key on keyboard to fwd Del and vice versa
 			if (event.getKeyCode() == KeyEvent.KEYCODE_POWER ) {
-				if (event.getDeviceId() == 6) { //should not be hardcoded TODO figure out how to set this beforehand
+				if (!(Boolean) param.args[2]) { //screen is not on
+					return; //let it be handled normally as a wake up event
+				}
+				if (event.getDeviceId() == btKeyboardID) { //should not be hardcoded TODO figure out how to set this beforehand
 					//XposedBridge.log("Called Method with keyEvent " + param.args[1].toString());
 					String s = "dunno";
 					switch (down) {
@@ -135,10 +149,26 @@ public class KeyConsumeHook implements IXposedHookLoadPackage{
 							s = "up";
 							break;
 						case KeyEvent.ACTION_MULTIPLE:
-							s = "repeat";
+							s = "other";
 							break;
 					}
-					XposedBridge.log("caught power on keyboard device id 6 going " + s);
+					XposedBridge.log("caught power on keyboard device id " + btKeyboardID + " going " + s);
+					
+					//now we will try to simply change the keyCode and leave everything else the same and let it handle it from there.
+					
+					//  public static KeyEvent More ...obtain(long downTime, long eventTime, int action,
+//					                   int code, int repeat, int metaState,
+//					                   int deviceId, int scancode, int flags, int source, String characters) {
+					
+					//KeyEvent newOne = KeyEvent.obtain(event.getDownTime(), event.getEventTime(), event.getAction(), KeyEvent.KEYCODE_FORWARD_DEL, event.getRepeatCount(), event.getMetaState(), event.getDeviceId(), event.getScanCode(), event.getFlags(), event.getSource(), "");
+					//for some reason it says this method doesn't exist, even though it clearly does.
+					
+					//KeyEvent newOne = new KeyEvent(event.getDownTime(), event.getEventTime(), event.getAction(), KeyEvent.KEYCODE_FORWARD_DEL, event.getRepeatCount(), event.getMetaState(), event.getDeviceId(), event.getScanCode(), event.getFlags(), event.getSource());
+					//see if this works...
+					
+					setObjectField(event, "mKeyCode", KeyEvent.KEYCODE_FORWARD_DEL);
+					XposedBridge.log("BeforeQueue: new KeyCode is " + (event.getKeyCode() == KeyEvent.KEYCODE_FORWARD_DEL? "CORRECT":"WRONG"));
+					param.setResult(1); //this stands for pass to user. should not be hard coded TODO
 				}
 				else {
 					XposedBridge.log("power pressed on tablet");
@@ -149,7 +179,9 @@ public class KeyConsumeHook implements IXposedHookLoadPackage{
 		
 		@Override
 		protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-
+			KeyEvent event = (KeyEvent) param.args[0];
+			String s = ((event.getKeyCode() == KeyEvent.KEYCODE_FORWARD_DEL? "CORRECT":"WRONG"));
+			XposedBridge.log("finished interceptKeyBeforeQueue with result " + param.getResult() + "and keycode is " + s);
 		}
 	};
 	
