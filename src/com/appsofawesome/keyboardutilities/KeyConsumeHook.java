@@ -81,7 +81,7 @@ public class KeyConsumeHook implements IXposedHookLoadPackage{
 		@Override
 		protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
 			
-			XposedBridge.log("Called Method with keyEvent " + param.args[1].toString());
+			//XposedBridge.log("Called Method with keyEvent " + param.args[1].toString());
 			KeyEvent event = (KeyEvent) param.args[1];
 			
 			// code to stop android from eating alt-tab
@@ -95,28 +95,10 @@ public class KeyConsumeHook implements IXposedHookLoadPackage{
 			
 			//catch the power button that was passed along and change the KeyCode value
 			if (event.getKeyCode() == KeyEvent.KEYCODE_POWER && event.getDeviceId() == btKeyboardID) {
-				XposedBridge.log("found power button push which was passed along");
-				//TODO see if this works
-				setObjectField(event, "mKeyCode", KeyEvent.KEYCODE_APP_SWITCH);
 				param.setResult(0); //tell it it was not handled and let the app handle it. 
 			}
 			
-			//removed code trying to  stop the language switch from happening due to Shift space consumption. It worked, except that the consumption is handled at a higher level by the samsung keyboard app.
-//			else if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0
-//	                && (event.getKeyCode() == KeyEvent.KEYCODE_LANGUAGE_SWITCH
-//                    || (event.getKeyCode() == KeyEvent.KEYCODE_SPACE
-//                            && (event.getMetaState() & KeyEvent.META_SHIFT_MASK) != 0))) {
-//				
-//				/* if (event.getKeyCode() == KeyEvent.KEYCODE_SPACE && (event.isShiftPressed())) { */
-//				XposedBridge.log("Shift + Space detected.");
-//				param.setResult(0); //tell it it was not handled and let the app handle it. (just send shift+ space for the app to handle)
-//				return;
-//			}
-//			
-//			else if (event.getKeyCode() == KeyEvent.KEYCODE_LANGUAGE_SWITCH) {
-//				XposedBridge.log("language switch detected.");
-//				//leave this alone for now
-//			}
+			
 			
 			
 		}
@@ -144,39 +126,25 @@ public class KeyConsumeHook implements IXposedHookLoadPackage{
 					return; //let it be handled normally as a wake up event
 				}
 				if (event.getDeviceId() == btKeyboardID) { //should not be hardcoded TODO figure out how to set this beforehand
-					//XposedBridge.log("Called Method with keyEvent " + param.args[1].toString());
-					String s = "dunno";
-					switch (down) {
-						case KeyEvent.ACTION_DOWN:
-							s = "down";
-							break;
-						case KeyEvent.ACTION_UP:
-							s = "up";
-							break;
-						case KeyEvent.ACTION_MULTIPLE:
-							s = "other";
-							break;
-					}
-					XposedBridge.log("caught power on keyboard device id " + btKeyboardID + " going " + s);
+//					String s = "dunno";
+//					switch (down) {
+//						case KeyEvent.ACTION_DOWN:
+//							s = "down";
+//							break;
+//						case KeyEvent.ACTION_UP:
+//							s = "up";
+//							break;
+//						case KeyEvent.ACTION_MULTIPLE:
+//							s = "other";
+//							break;
+//					}
+//					XposedBridge.log("caught power on keyboard device id " + btKeyboardID + " going " + s);
 					
-					//now we will try to simply change the keyCode and leave everything else the same and let it handle it from there.
-					
-					//  public static KeyEvent More ...obtain(long downTime, long eventTime, int action,
-//					                   int code, int repeat, int metaState,
-//					                   int deviceId, int scancode, int flags, int source, String characters) {
-					
-					//KeyEvent newOne = KeyEvent.obtain(event.getDownTime(), event.getEventTime(), event.getAction(), KeyEvent.KEYCODE_FORWARD_DEL, event.getRepeatCount(), event.getMetaState(), event.getDeviceId(), event.getScanCode(), event.getFlags(), event.getSource(), "");
-					//for some reason it says this method doesn't exist, even though it clearly does.
-					
-					//KeyEvent newOne = new KeyEvent(event.getDownTime(), event.getEventTime(), event.getAction(), KeyEvent.KEYCODE_FORWARD_DEL, event.getRepeatCount(), event.getMetaState(), event.getDeviceId(), event.getScanCode(), event.getFlags(), event.getSource());
-					//see if this works...
-					
-					//setObjectField(event, "mKeyCode", KeyEvent.KEYCODE_FORWARD_DEL);
-					XposedBridge.log("caught power from BT keyboard");
+					//XposedBridge.log("caught power from BT keyboard");
 					param.setResult(1); //this stands for pass to user. should not be hard coded TODO
 				}
 				else {
-					XposedBridge.log("power pressed on tablet");
+					//XposedBridge.log("power pressed on tablet");
 				}
 			}
 			
