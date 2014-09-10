@@ -23,7 +23,7 @@ public class KeyConsumeHook implements IXposedHookLoadPackage{
 	private boolean catchAltTab = true;
 	private boolean catchWinTab = false;
 	
-	private int btKeyboardID = 6;
+	//private int btKeyboardID = 6;
 
 
 
@@ -69,12 +69,12 @@ public class KeyConsumeHook implements IXposedHookLoadPackage{
 		findAndHookMethod(WindowManagerClass, "interceptKeyBeforeDispatching", WindowStateClass, KeyEvent.class, int.class, hook1);
 		
 		//public int interceptKeyBeforeQueueing(KeyEvent event, int policyFlags, boolean isScreenOn) {
-		findAndHookMethod(WindowManagerClass, "interceptKeyBeforeQueueing", KeyEvent.class, int.class, boolean.class, hook2);
+		//findAndHookMethod(WindowManagerClass, "interceptKeyBeforeQueueing", KeyEvent.class, int.class, boolean.class, hook2);
 		
 		//findAndHookMethod(WindowManagerClass, "preloadRecentApps", hook3);
 		
 		//public KeyEvent dispatchUnhandledKey(WindowState win, KeyEvent event, int policyFlags) {
-		findAndHookMethod(WindowManagerClass, "dispatchUnhandledKey", WindowStateClass, KeyEvent.class, int.class, hook4);
+		//findAndHookMethod(WindowManagerClass, "dispatchUnhandledKey", WindowStateClass, KeyEvent.class, int.class, hook4);
 	}
 
 	//the callback that overrides behavior in certain circumstances. 
@@ -95,20 +95,20 @@ public class KeyConsumeHook implements IXposedHookLoadPackage{
 			}
 			
 			//catch the power button that was passed along and change the KeyCode value
-			if (event.getKeyCode() == KeyEvent.KEYCODE_POWER && event.getDeviceId() == btKeyboardID) {
-				//TODO remove this when done. 
-				//I am trying to see if I can get better info on the keyboard and maybe identify exactly which kl file it uses
-				InputDevice device = event.getDevice();
-				XposedBridge.log("Device name: " + device.getName());
-				XposedBridge.log("Device descriptor: " + device.getDescriptor());
-				XposedBridge.log("Device vendor: " + device.getVendorId());
-				XposedBridge.log("Device product ID: " + device.getProductId());
-				XposedBridge.log("Device isVirtual: " + device.isVirtual());
-				XposedBridge.log("Device Type: " + device.getKeyboardType());
-				XposedBridge.log("Device Sources: " + device.getSources());
-				XposedBridge.log("Device kcm: " + device.getKeyCharacterMap());
-				param.setResult(0); //tell it it was not handled and let the app handle it. 
-			}
+//			if (event.getKeyCode() == KeyEvent.KEYCODE_POWER && event.getDeviceId() == btKeyboardID) {
+//				//TODO remove this when done. 
+//				//I am trying to see if I can get better info on the keyboard and maybe identify exactly which kl file it uses
+//				InputDevice device = event.getDevice();
+//				XposedBridge.log("Device name: " + device.getName());
+//				XposedBridge.log("Device descriptor: " + device.getDescriptor());
+//				XposedBridge.log("Device vendor: " + device.getVendorId());
+//				XposedBridge.log("Device product ID: " + device.getProductId());
+//				XposedBridge.log("Device isVirtual: " + device.isVirtual());
+//				XposedBridge.log("Device Type: " + device.getKeyboardType());
+//				XposedBridge.log("Device Sources: " + device.getSources());
+//				XposedBridge.log("Device kcm: " + device.getKeyCharacterMap());
+//				param.setResult(0); //tell it it was not handled and let the app handle it. 
+//			}
 			
 			
 			
@@ -133,33 +133,33 @@ public class KeyConsumeHook implements IXposedHookLoadPackage{
 			
 			
 			//code to remap sleep key on keyboard to fwd Del and vice versa
-			if (event.getKeyCode() == KeyEvent.KEYCODE_POWER ) {
-				if (!(Boolean) param.args[2]) { //screen is not on
-					return; //let it be handled normally as a wake up event
-				}
-				if (event.getDeviceId() == btKeyboardID) { //should not be hardcoded TODO figure out how to set this beforehand
-//					String s = "dunno";
-//					switch (down) {
-//						case KeyEvent.ACTION_DOWN:
-//							s = "down";
-//							break;
-//						case KeyEvent.ACTION_UP:
-//							s = "up";
-//							break;
-//						case KeyEvent.ACTION_MULTIPLE:
-//							s = "other";
-//							break;
-//					}
-//					XposedBridge.log("caught power on keyboard device id " + btKeyboardID + " going " + s);
-					
-					//XposedBridge.log("caught power from BT keyboard");
-					param.setResult(1); //this stands for pass to user. should not be hard coded TODO
-				}
-				else {
-					//XposedBridge.log("power pressed on tablet");
-				}
-			}
-			
+//			if (event.getKeyCode() == KeyEvent.KEYCODE_POWER ) {
+//				if (!(Boolean) param.args[2]) { //screen is not on
+//					return; //let it be handled normally as a wake up event
+//				}
+//				if (event.getDeviceId() == btKeyboardID) { //should not be hardcoded TODO figure out how to set this beforehand
+////					String s = "dunno";
+////					switch (down) {
+////						case KeyEvent.ACTION_DOWN:
+////							s = "down";
+////							break;
+////						case KeyEvent.ACTION_UP:
+////							s = "up";
+////							break;
+////						case KeyEvent.ACTION_MULTIPLE:
+////							s = "other";
+////							break;
+////					}
+////					XposedBridge.log("caught power on keyboard device id " + btKeyboardID + " going " + s);
+//					
+//					//XposedBridge.log("caught power from BT keyboard");
+//					param.setResult(1); //this stands for pass to user. should not be hard coded TODO
+//				}
+//				else {
+//					//XposedBridge.log("power pressed on tablet");
+//				}
+//			}
+//			
 		}
 		
 		@Override
@@ -171,31 +171,18 @@ public class KeyConsumeHook implements IXposedHookLoadPackage{
 	};
 	
 	
-//	XC_MethodHook hook3 = new XC_MethodHook() {
-//		@Override
-//		protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-//			XposedBridge.log("caught changed keystroke");
-//			param.setResult(null);
-//		}
-//		
-//		@Override
-//		protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-//
-//		}
-//	};
-	
 	//This hooks the unhandled key dispatch method. Basically, this is where it checks for fallback actions, and the returned KeyEvent is the one it dispatches. so switches should happen here, I think. 
 	XC_MethodHook hook4 = new XC_MethodHook() {
 		@Override
 		protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
 			
-			KeyEvent event = (KeyEvent) param.args[1];
-			if (event.getKeyCode() == KeyEvent.KEYCODE_POWER && event.getDeviceId() == btKeyboardID) {
-				setObjectField(event, "mKeyCode", KeyEvent.KEYCODE_FORWARD_DEL);
-				param.setResult(event);
-				XposedBridge.log("changed keystroke before dispatch");
-				
-			}
+//			KeyEvent event = (KeyEvent) param.args[1];
+//			if (event.getKeyCode() == KeyEvent.KEYCODE_POWER && event.getDeviceId() == btKeyboardID) {
+//				setObjectField(event, "mKeyCode", KeyEvent.KEYCODE_FORWARD_DEL);
+//				param.setResult(event);
+//				XposedBridge.log("changed keystroke before dispatch");
+//				
+//			}
 		}
 		
 		@Override
